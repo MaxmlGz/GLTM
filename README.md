@@ -1,5 +1,6 @@
-Automatic Discovery of the Statistical Types of Variables in a Dataset
----------------------------------------------------------
+General Latent Type Model
+---
+(Automatic Discovery of the Statistical Types of Variables in a Dataset)
 
 This code implements the Bayesian method and reproduces the experiment in 
 
