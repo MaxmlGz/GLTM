@@ -4,7 +4,7 @@ Python wrapper methods for the C++ methods.
 
 from DataTypesPython import *
 import time
-
+from typing import Tuple
 
 def infer(dataset="AbaloneC",
           s2Z=1.,
@@ -13,7 +13,7 @@ def infer(dataset="AbaloneC",
           s2u=0.001,
           s2theta=1.,
           maxK=10,
-          Niter=10) -> dict:
+          Niter=10) -> Tuple:
     """
     Python wrapper to launch inference routine for the GLTM model.
     Inputs:
@@ -34,6 +34,7 @@ def infer(dataset="AbaloneC",
             B: observation matrix sampled from posterior
             s2Y: inferred noise variance for pseudo-observations Y
     """
+
     # Load the C++ wrapper
     wrap = wrapperPython()  # This is not actually an error just python being silly.
 
@@ -77,4 +78,4 @@ def infer(dataset="AbaloneC",
     sim_result['weights'] = np.asarray(sim_out.West)  # Convert back to numpy
     sim_result['likelihoods'] = np.asarray(sim_out.LIK)  # Convert back to numpy
 
-    return sim_result
+    return sim_result, mat['T'].tolist()[0]

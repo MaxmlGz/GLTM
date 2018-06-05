@@ -15,7 +15,6 @@ try:
 except ImportError:
     from io import StringIO
 
-
 cppyy.load_library("/usr/lib/libgsl")  # Change this to your local setting.
 cppyy.include("gsl/gsl_matrix.h")
 cppyy.include("wrapper_python.h")
@@ -103,10 +102,10 @@ def weight_assign(list_of_types):
     2: continuous
     1: continuous with option positive
     """
-    weights = dict([(4, [100, 100, 100, 1e-6]),
-                    (3, [1e6, 1e6, 1e-6, 1e-6]),
-                    (2, [100, 100, 1e-6, 1e-6]),
-                    (1, [100, 100, 1e-6, 100])])
+    weights = dict([(4, [100, 100, 100, 1e-6]),  # Categorical, ordinal, count
+                    (3, [1e-6, 1e-6, 1e-6, 1e-6]),  # binary
+                    (2, [100, 100, 1e-6, 1e-6]),  # real and interval
+                    (1, [100, 100, 1e-6, 100])])  # real, interval, positive real
 
     return np.array(list(map(lambda d: weights[d], list_of_types)))
 
@@ -195,7 +194,7 @@ def run_simulation(dataset="AbaloneC",
                    s2u=0.001,
                    s2theta=1.,
                    KK=5,
-                   Nits=5) -> dict:
+                   Nits=5):
     """
     This function initialises and runs the GLTM with the same datasets as Valera.
     """
@@ -240,7 +239,7 @@ def run_simulation(dataset="AbaloneC",
     sim_result['weights'] = np.asarray(sim_out.West)
     sim_result['likelihoods'] = np.asarray(sim_out.LIK)
 
-    return sim_result
+    return sim_result, mat['T'].tolist()[0]
 
 
 def pass_params_to_cppyy():
@@ -256,5 +255,7 @@ def pass_params_to_cppyy():
 
 if __name__ == '__main__':
     # Verbose version
-    out = run_simulation()
+    out, types = run_simulation()
+    print(out['weights'])
     print(out['likelihoods'])
+    print("\n", types)
