@@ -5,6 +5,8 @@ import scipy.io
 import os
 import warnings
 from copy import deepcopy
+import cppyy
+import re
 
 dataset_dir = os.path.join(os.path.dirname(__file__), "../..", "datasets/")
 
@@ -13,8 +15,6 @@ try:
 except ImportError:
     from io import StringIO
 
-import cppyy
-import re
 
 cppyy.load_library("/usr/lib/libgsl")  # Change this to your local setting.
 cppyy.include("gsl/gsl_matrix.h")
