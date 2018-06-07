@@ -8,6 +8,7 @@ import warnings
 from copy import deepcopy
 import cppyy
 import re
+import ast
 
 dataset_dir = os.path.join(os.path.dirname(__file__), "../..", "datasets/")
 
@@ -64,6 +65,34 @@ def gsl_matrix_repr(self):
             s.write('\n')
     s.write(']')
     return s.getvalue()
+
+
+def gsl_matrix_repr_hack(gsl_mat):
+    """
+    Returns a proper numpy array from a GSL matrix.
+
+    :param gsl_mat:  matrix of type gsl_matrix (C++)
+    :return: numpy array
+    """
+    data, tda = gsl_mat.data, gsl_mat.tda
+    s = StringIO()
+    s.write('[')
+    for i in range(gsl_mat.size1):
+        if i == 0:
+            s.write('[')
+        else:
+            s.write(' [')
+        for j in range(gsl_mat.size2):
+            if j != 0:
+                s.write(', ')
+            s.write(str(data[i * tda + j]))
+        s.write(']')
+        if i != gsl_mat.size1 - 1:
+            s.write('\n')
+    s.write(']')
+    S = s.getvalue()
+    # Returns proper numpy array
+    return np.asarray(ast.literal_eval(S.replace('\n', ',')))
 
 
 re_gsl_matrix = re.compile('gsl_matrix_?(\w*)')
@@ -301,7 +330,7 @@ def initialise_types(dataset="AbaloneC",
                      s2u=0.001,
                      s2theta=1.,
                      K=10,
-                     Niter=10):
+                     Niter=3):
     """
     Python wrapper to initialise inference routine for the GLTM model.
     Inputs:
@@ -345,8 +374,8 @@ def initialise_types(dataset="AbaloneC",
     sim_result = dict()
     sim_result['latent_features'] = sim_out.Kest  # This is a bit stupid to pass since it does not change.
     sim_result['countErr'] = sim_out.countErr
-    sim_result['weights'] = np.asarray(sim_out.West)  # Convert back to numpy
-    sim_result['likelihoods'] = np.asarray(sim_out.LIK)  # Convert back to numpy
+    sim_result['weights'] = gsl_matrix_repr_hack(sim_out.West)  # np.asarray(sim_out.West)  # Convert back to numpy
+    sim_result['likelihoods'] = gsl_matrix_repr_hack(sim_out.LIK)  # np.asarray(sim_out.LIK)  # Convert back to numpy
 
     return sim_result, gltm_params, types_as_list
 
@@ -397,15 +426,13 @@ def infer_types(X,
     sim_result = dict()
     sim_result['latent_features'] = sim_out.Kest  # This is a bit stupid to pass since it does not change.
     sim_result['countErr'] = sim_out.countErr
-    sim_result['weights'] = np.asarray(sim_out.West)  # Convert back to numpy
-    sim_result['likelihoods'] = np.asarray(sim_out.LIK)  # Convert back to numpy
+    sim_result['weights'] = gsl_matrix_repr_hack(sim_out.West)  # np.asarray(sim_out.West)  # Convert back to numpy
+    sim_result['likelihoods'] = gsl_matrix_repr_hack(sim_out.LIK)  # np.asarray(sim_out.LIK)  # Convert back to numpy
 
     return sim_result
 
 
 if __name__ == '__main__':
     # Verbose version
-    out, types = run_simulation()
-    print(out['weights'])
-    # print(out['likelihoods'])
-    print(types)
+    a, b, c = initialise_types()
+    print(a['weights'], a['weights'].shape, type(a['weights']))
