@@ -11,19 +11,21 @@ import cppyy
 import re
 
 # type matchers numpy -> gsl
-tm_np2gsl = dict()
-tm_np2gsl['float64'] = ''
-tm_np2gsl['float32'] = 'float'
-tm_np2gsl[cppyy.sizeof('long') == 4 and 'int32' or 'int64'] = 'long'
-tm_np2gsl[cppyy.sizeof('int') == 4 and 'int32' or 'int64'] = 'int'
+tm_np2gsl = {
+    'float64': '',
+    'float32': 'float',
+    cppyy.sizeof('long') == 4 and 'int32' or 'int64': 'long',
+    cppyy.sizeof('int') == 4 and 'int32' or 'int64': 'int',
+}
+
 # etc. for other numpy types
 
-converters = dict()
-for key, value in tm_np2gsl.items():
-    if key == 'float64':
-        converters[key] = 'gsl_matrix_view_array'
-    else:
-        converters[key] = 'gsl_matrix_%s_view_array' % value
+converters = {
+    key: 'gsl_matrix_view_array'
+    if key == 'float64'
+    else f'gsl_matrix_{value}_view_array'
+    for key, value in tm_np2gsl.items()
+}
 
 # gsl_matrix decorator
 
@@ -64,7 +66,7 @@ def numpy2gsl(arr):
     try:
         converter = getattr(cppyy.gbl, converters[str(arr.dtype)])
     except KeyError as e:
-        raise TypeError('unsupported data type: %s' % arr.dtype)
+        raise TypeError(f'unsupported data type: {arr.dtype}')
     from numpy import ascontiguousarray
     data = ascontiguousarray(arr)
     gmv = converter(data, arr.shape[0], arr.shape[1])
