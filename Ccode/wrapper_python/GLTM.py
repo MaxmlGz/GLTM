@@ -29,19 +29,21 @@ cppyy.load_library(here("libDataTypes"))
 from cppyy.gbl import wrapperPython
 
 # type matchers numpy -> gsl
-tm_np2gsl = dict()
-tm_np2gsl['float64'] = ''
-tm_np2gsl['float32'] = 'float'
-tm_np2gsl[cppyy.sizeof('long') == 4 and 'int32' or 'int64'] = 'long'
-tm_np2gsl[cppyy.sizeof('int') == 4 and 'int32' or 'int64'] = 'int'
+tm_np2gsl = {
+    'float64': '',
+    'float32': 'float',
+    cppyy.sizeof('long') == 4 and 'int32' or 'int64': 'long',
+    cppyy.sizeof('int') == 4 and 'int32' or 'int64': 'int',
+}
+
 # etc. for other numpy types
 
-converters = dict()
-for key, value in tm_np2gsl.items():
-    if key == 'float64':
-        converters[key] = 'gsl_matrix_view_array'
-    else:
-        converters[key] = 'gsl_matrix_%s_view_array' % value
+converters = {
+    key: 'gsl_matrix_view_array'
+    if key == 'float64'
+    else f'gsl_matrix_{value}_view_array'
+    for key, value in tm_np2gsl.items()
+}
 
 
 # gsl_matrix decorator
@@ -111,7 +113,7 @@ def numpy2gsl(arr):
     try:
         converter = getattr(cppyy.gbl, converters[str(arr.dtype)])
     except KeyError as e:
-        raise TypeError('unsupported data type: %s' % arr.dtype)
+        raise TypeError(f'unsupported data type: {arr.dtype}')
     from numpy import ascontiguousarray
     data = ascontiguousarray(arr)
     gmv = converter(data, arr.shape[0], arr.shape[1])
@@ -268,10 +270,12 @@ def run_simulation(dataset="AbaloneC",
                                             X)
 
     # Store results
-    sim_result = dict()
-    sim_result['latent_features'] = sim_out.Kest
-    sim_result['countErr'] = sim_out.countErr
-    sim_result['weights'] = np.asarray(sim_out.West)
+    sim_result = {
+        'latent_features': sim_out.Kest,
+        'countErr': sim_out.countErr,
+        'weights': np.asarray(sim_out.West),
+    }
+
     sim_result['likelihoods'] = np.asarray(sim_out.LIK)
 
     return sim_result, mat['T'].tolist()[0]
@@ -355,13 +359,13 @@ def initialise_types(dataset="AbaloneC",
     # Load the C++ wrapper
     wrap = wrapperPython()  # This is not actually an error just python being silly.
 
-    # Load model components
-    gltm_params = dict()
     X, Xmiss, types, types_as_list, categories = load_and_pass_data_as_gsl(dataset)
-    gltm_params['X'] = X
-    gltm_params['Xmiss'] = Xmiss
-    gltm_params['types'] = types
-    gltm_params['categories'] = categories
+    gltm_params = {
+        'X': X,
+        'Xmiss': Xmiss,
+        'types': types,
+        'categories': categories,
+    }
 
     # Assign weight priors based on the available types
     weights = numpy2gsl(weight_assign(types))
@@ -371,10 +375,12 @@ def initialise_types(dataset="AbaloneC",
     print(time.ctime() + " -- Completed C++ routine on GLTM side...\n")
 
     # Store results
-    sim_result = dict()
-    sim_result['latent_features'] = sim_out.Kest  # This is a bit stupid to pass since it does not change.
-    sim_result['countErr'] = sim_out.countErr
-    sim_result['weights'] = gsl_matrix_repr_hack(sim_out.West)  # np.asarray(sim_out.West)  # Convert back to numpy
+    sim_result = {
+        'latent_features': sim_out.Kest,
+        'countErr': sim_out.countErr,
+        'weights': gsl_matrix_repr_hack(sim_out.West),
+    }
+
     sim_result['likelihoods'] = gsl_matrix_repr_hack(sim_out.LIK)  # np.asarray(sim_out.LIK)  # Convert back to numpy
 
     return sim_result, gltm_params, types_as_list
@@ -423,10 +429,12 @@ def infer_types(X,
     print(time.ctime() + " -- Completed C++ routine on GLTM side...\n")
 
     # Store results
-    sim_result = dict()
-    sim_result['latent_features'] = sim_out.Kest  # This is a bit stupid to pass since it does not change.
-    sim_result['countErr'] = sim_out.countErr
-    sim_result['weights'] = gsl_matrix_repr_hack(sim_out.West)  # np.asarray(sim_out.West)  # Convert back to numpy
+    sim_result = {
+        'latent_features': sim_out.Kest,
+        'countErr': sim_out.countErr,
+        'weights': gsl_matrix_repr_hack(sim_out.West),
+    }
+
     sim_result['likelihoods'] = gsl_matrix_repr_hack(sim_out.LIK)  # np.asarray(sim_out.LIK)  # Convert back to numpy
 
     return sim_result
